@@ -1,0 +1,26 @@
+CREATE TABLE test.reviews_DmBarkov
+(
+    listing_id Int32,
+    id Int32,
+    date DateTime('Europe/Moscow'),
+    reviewer_id Int32,
+    reviewer_name String,
+    comments String
+) 
+ENGINE = MergeTree
+
+ORDER BY (listing_id, id)
+______________________________________________________________________________________________________________________________________________
+
+ИЗМЕНЕНИЕ ТИПА ДАННЫХ КОЛОНКИ
+
+ALTER TABLE test.reviews MODIFY COLUMN date Date
+______________________________________________________________________________________________________________________________________________
+
+ДОБАВЛЕНИЕ СТОЛБЦА В ТАБЛИЦУ
+
+ALTER TABLE test.reviews ADD COLUMN price Float32 AFTER comments
+______________________________________________________________________________________________________________________________________________
+ОБНОВЛЕНИЕ ДАННЫХ В СТОЛБЦE ПО УСЛОВИЮ
+
+ALTER TABLE test.reviews UPDATE price=2*price WHERE date>'2019-01-01'

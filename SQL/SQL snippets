@@ -1,0 +1,81 @@
+-- Сначала оставьте только те объявления, в которых оценка на основе отзывов выше среднего, а число отзывов в месяц составляет строго меньше трёх
+--  Затем отсортируйте по убыванию две колонки: сначала по числу отзывов в месяц, потом по оценке. В качестве ответа укажите id объявления из первой строки.
+-- review_scores_rating – оценка на основе отзывов
+-- reviews_per_month – число отзывов в месяц
+
+SELECT
+    id, 
+    (toFloat32OrNull(review_scores_rating)) AS review_scores_rating_higher_avg,
+    reviews_per_month
+FROM 
+    listings
+WHERE
+    (SELECT AVG(toFloat32OrNull(review_scores_rating)) FROM listings) < toFloat32OrNull(review_scores_rating)
+    AND reviews_per_month < 3
+ORDER BY
+    reviews_per_month DESC,
+    review_scores_rating_higher_avg DESC
+LIMIT 100
+____________________________________________________________________________________________________________________________________________
+
+
+
+
+-- Посчитайте среднее расстояние до центра города и выведите идентификаторы объявлений о сдаче отдельных комнат, для которых расстояние оказалось меньше среднего. Результат отсортируйте по убыванию, тем самым выбрав комнату, которая является наиболее удаленной от центра, но при этом расположена ближе, чем остальные комнаты в среднем. 
+
+--     id – идентификатор объявления
+--     host_id – идентификатор хозяина
+--     room_type – тип жилья ('Private room')
+--     latitude – широта
+--     longitude – долгота
+--     52.5200 с.ш., 13.4050 в.д – координаты центра Берлина
+
+-- В качестве ответа укажите идентификатор хозяина (host_id), сдающего данную комнату.
+
+______________________________________________**С помощью WHERE**__
+SELECT
+    id,
+    host_id,
+    geoDistance(13.4050, 52.5200, toFloat32OrNull(longitude), toFloat32OrNull(latitude)) AS distance_from_center
+FROM 
+    listings
+WHERE
+    room_type = 'Private room'
+    AND (
+        SELECT
+            AVG(geoDistance(13.4050, 52.5200, toFloat32OrNull(longitude), toFloat32OrNull(latitude)))
+        FROM 
+            listings
+        WHERE
+            room_type = 'Private room'
+        ) > distance_from_center
+ORDER BY
+    distance_from_center DESC
+LIMIT 100
+
+______________________________________________**C помощью WITH**___
+
+WITH
+    (
+    SELECT
+        AVG(geoDistance(13.4050, 52.5200, toFloat32OrNull(longitude), toFloat32OrNull(latitude)))
+    FROM 
+        listings
+    WHERE
+        room_type = 'Private room'
+    ) AS avg_distance
+SELECT
+    id,
+    host_id,
+    geoDistance(13.4050, 52.5200, toFloat32OrNull(longitude), toFloat32OrNull(latitude)) AS distance_from_center,
+    avg_distance
+FROM 
+    listings
+WHERE
+    room_type = 'Private room'
+    AND  avg_distance > distance_from_center
+ORDER BY
+    distance_from_center DESC
+LIMIT 100
+____________________________________________________________________________________________________________________________________________
+

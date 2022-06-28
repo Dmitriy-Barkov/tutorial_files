@@ -1,0 +1,335 @@
+-- Оконная функция расета тотал по всей таблице
+SELECT
+    sq.installationdate AS installationdate,
+    sq.cost AS cost,
+    SUM(sq.cost) OVER w AS total_cost
+FROM
+    (
+    SELECT
+        installationdate,
+        SUM(installcost) AS cost
+    FROM
+        installs
+    WHERE
+        installcost > 0
+    GROUP BY
+        installationdate
+    ) AS sq
+WINDOW w AS ()
+-- окно без параметров осуществляет добавление всей таблицы целиком, т.е. все из FROM попало в функцию.
+-- Возьми целиком эту таблицу, столбец cost  и просуммируй и положи на каждую строчку
+
+____________________________________________________________________________________________________________________________________________
+
+-- Посчитать total_cost отдельно на ios и android
+SELECT
+    sq.installationdate AS installationdate,
+    sq.platform AS platform,
+    sq.cost AS cost,
+    SUM(sq.cost) OVER w AS total_cost
+FROM
+    (
+    SELECT
+        installationdate,
+        platform,
+        SUM(installcost) AS cost
+    FROM
+        installs
+    WHERE
+        installcost > 0
+    GROUP BY
+        installationdate,
+        platform
+    ) AS sq
+WINDOW w AS (
+    PARTITION BY sq.platform
+-- отдельно по каждой платформе посчитаются суммы
+    )
+ORDER BY
+    installationdate ASC,
+    platform ASC
+____________________________________________________________________________________________________________________________________________
+
+-- Посчитать total_cost отдельно на ios и android и сортироваться по дате
+SELECT
+    sq.installationdate AS installationdate,
+    sq.platform AS platform,
+    sq.cost AS cost,
+    SUM(sq.cost) OVER w AS total_cost
+FROM
+    (
+    SELECT
+        installationdate,
+        platform,
+        SUM(installcost) AS cost
+    FROM
+        installs
+    WHERE
+        installcost > 0
+    GROUP BY
+        installationdate,
+        platform
+    ) AS sq
+WINDOW w AS (
+    PARTITION BY sq.platform
+-- отдельно по каждой платформе посчитаются суммы
+    ORDER BY CAST(sq.installationdate AS date) ASC
+-- Сортируемся по возрастанию инсталейшн дэйт, приводим ее к формату даты. Тем самым сумма стала накопительной.
+-- Т.к. мы сортировкой создали рамку окна, посчитай столько, сколько было денег на актуальную дату. Но рамка окан не явна.
+    )
+ORDER BY
+    installationdate ASC,
+    platform ASC
+___________________________________________________________________________________________________________________________________________  
+-- Посчитать total_cost отдельно на ios и android и сортироваться по дате с указанными границами рамки окна
+SELECT
+    sq.installationdate AS installationdate,
+    sq.platform AS platform,
+    sq.cost AS cost,
+    SUM(sq.cost) OVER w AS total_cost
+FROM
+    (
+    SELECT
+        installationdate,
+        platform,
+        SUM(installcost) AS cost
+    FROM
+        installs
+    WHERE
+        installcost > 0
+    GROUP BY
+        installationdate,
+        platform
+    ) AS sq
+WINDOW w AS (
+    PARTITION BY sq.platform
+-- отдельно по каждой платформе посчитаются суммы
+    ORDER BY CAST(sq.installationdate AS date) ASC
+-- Сортируемся по возрастанию инсталейшн дэйт, приводим ее к формату даты. Тем самым сумма стала накопительной.
+-- Т.к. мы сортировкой создали рамку окна, посчитай столько, сколько было денег на актуальную дату. Но рамка окна не явна.
+    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+-- Рамки окна от начала партиции (PARTITION BY) до текущей строки
+    )
+ORDER BY
+    installationdate ASC,
+    platform ASC
+
+___________________________________________________________________________________________________________________________________________
+
+-- Посчитать total_cost отдельно на ios и android и сортироваться по дате с указанными границами рамки окна
+SELECT
+    sq.installationdate AS installationdate,
+    sq.platform AS platform,
+    sq.cost AS cost,
+    SUM(sq.cost) OVER w AS total_cost
+FROM
+    (
+    SELECT
+        installationdate,
+        platform,
+        SUM(installcost) AS cost
+    FROM
+        installs
+    WHERE
+        installcost > 0
+    GROUP BY
+        installationdate,
+        platform
+    ) AS sq
+WINDOW w AS (
+    PARTITION BY sq.platform
+-- отдельно по каждой платформе посчитаются суммы
+    ORDER BY CAST(sq.installationdate AS date) ASC
+-- Сортируемся по возрастанию инсталейшн дэйт, приводим ее к формату даты. Тем самым сумма стала накопительной.
+-- Т.к. мы сортировкой создали рамку окна, посчитай столько, сколько было денег на актуальную дату. Но рамка окна не явна.
+    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+-- Рамки окна от начала раздела и до конца раздела
+    )
+ORDER BY
+    installationdate ASC,
+    platform ASC
+
+___________________________________________________________________________________________________________________________________________
+
+-- Посчитать total_cost отдельно на ios и android и сортироваться по дате с указанными границами рамки окна
+SELECT
+    sq.installationdate AS installationdate,
+    sq.platform AS platform,
+    sq.cost AS cost,
+    SUM(sq.cost) OVER w AS total_cost
+FROM
+    (
+    SELECT
+        installationdate,
+        platform,
+        SUM(installcost) AS cost
+    FROM
+        installs
+    WHERE
+        installcost > 0
+    GROUP BY
+        installationdate,
+        platform
+    ) AS sq
+WINDOW w AS (
+    PARTITION BY sq.platform
+-- отдельно по каждой платформе посчитаются суммы
+    ORDER BY CAST(sq.installationdate AS date) ASC
+-- Сортируемся по возрастанию инсталейшн дэйт, приводим ее к формату даты. Тем самым сумма стала накопительной.
+-- Т.к. мы сортировкой создали рамку окна, посчитай столько, сколько было денег на актуальную дату. Но рамка окна не явна.
+    ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+-- Рамки окна от Текущего ряда и до конца раздела. Получается сумма, которая наоборот снижается - чем мы нижк, тем меньше данных в это окно попадает
+    )
+ORDER BY
+    installationdate ASC,
+    platform ASC
+
+___________________________________________________________________________________________________________________________________________
+
+-- Посчитать total_cost отдельно на ios и android и сортироваться по дате с указанными границами рамки окна
+SELECT
+    sq.installationdate AS installationdate,
+    sq.platform AS platform,
+    sq.cost AS cost,
+    SUM(sq.cost) OVER w AS total_cost
+FROM
+    (
+    SELECT
+        installationdate,
+        platform,
+        SUM(installcost) AS cost
+    FROM
+        installs
+    WHERE
+        installcost > 0
+    GROUP BY
+        installationdate,
+        platform
+    ) AS sq
+WINDOW w AS (
+    PARTITION BY sq.platform
+-- отдельно по каждой платформе посчитаются суммы
+    ORDER BY CAST(sq.installationdate AS date) ASC
+-- Сортируемся по возрастанию инсталейшн дэйт, приводим ее к формату даты. Тем самым сумма стала накопительной.
+-- Т.к. мы сортировкой создали рамку окна, посчитай столько, сколько было денег на актуальную дату. Но рамка окна не явна.
+    ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING
+-- Рамки окна от 1 строчки вперед и до 1 строчки назад. 
+    )
+ORDER BY
+    installationdate ASC,
+    platform ASC
+    
+___________________________________________________________________________________________________________________________________________
+
+
+-- Посчитать total_cost отдельно на ios и android и сортироваться по дате с указанными границами рамки окна
+SELECT
+    sq.installationdate AS installationdate,
+    sq.platform AS platform,
+    sq.cost AS cost,
+    SUM(sq.cost) OVER w AS total_cost
+FROM
+    (
+    SELECT
+        installationdate,
+        platform,
+        SUM(installcost) AS cost
+    FROM
+        installs
+    WHERE
+        installcost > 0
+    GROUP BY
+        installationdate,
+        platform
+    ) AS sq
+WINDOW w AS (
+    PARTITION BY sq.platform
+-- отдельно по каждой платформе посчитаются суммы
+    ORDER BY CAST(sq.installationdate AS date) ASC
+-- Сортируемся по возрастанию инсталейшн дэйт, приводим ее к формату даты. Тем самым сумма стала накопительной.
+-- Т.к. мы сортировкой создали рамку окна, посчитай столько, сколько было денег на актуальную дату. Но рамка окна не явна.
+    RANGE BETWEEN '1 day' PRECEDING AND '2 days' FOLLOWING
+-- Рамки окна от сущностей из ORDER BY 
+    )
+ORDER BY
+    installationdate ASC,
+    platform ASC
+___________________________________________________________________________________________________________________________________________
+
+-- Специальные оконные функции
+SELECT
+    sq.installationdate AS installationdate,
+    sq.cost AS cost,
+    SUM(sq.cost) OVER w AS total_cost,
+    AVG(sq.cost) OVER w AS avg_cost,
+-- позволяет сравнивать текущую цену со средней по всем данным
+    row_number() OVER w AS row_number
+-- порядковый номер строки. может быть полезен, когда считаем сессии.
+FROM
+    (
+    SELECT
+        installationdate,
+        SUM(installcost) AS cost
+    FROM
+        installs
+    WHERE
+        installcost > 0
+    GROUP BY
+        installationdate
+    ) AS sq
+WINDOW w AS ()
+ORDER BY
+    installationdate ASC
+
+___________________________________________________________________________________________________________________________________________
+
+-- Специальные оконные функции
+SELECT
+    sq.installationdate AS installationdate,
+    sq.cost AS cost,
+    SUM(sq.cost) OVER w AS total_cost,
+    AVG(sq.cost) OVER w AS avg_cost,
+-- позволяет сравнивать текущую цену со средней по всем данным
+    row_number() OVER w AS row_number,
+-- порядковый номер строки. может быть полезен, когда считаем сессии.
+    LAG(sq.cost, 1) OVER w AS lag_test,
+-- получить на текущей строчке значения предыдущей
+    LEAD(sq.cost, 1) OVER w AS lead_test
+-- получить на текущей строчке значения следующей
+FROM
+    (
+    SELECT
+        installationdate,
+        SUM(installcost) AS cost
+    FROM
+        installs
+    WHERE
+        installcost > 0
+    GROUP BY
+        installationdate
+    ) AS sq
+WINDOW w AS ()
+ORDER BY
+    installationdate ASC
+
+___________________________________________________________________________________________________________________________________________
+
+-- Объявление окна без блока window
+SELECT
+    sq.installationdate AS installationdate,
+    sq.cost AS cost,
+    SUM(sq.cost) OVER () AS total_cost
+FROM
+    (
+    SELECT
+        installationdate,
+        SUM(installcost) AS cost
+    FROM
+        installs
+    WHERE
+        installcost > 0
+    GROUP BY
+        installationdate
+    ) AS sq
+ORDER BY
+    installationdate ASC
